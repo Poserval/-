@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Image Saver Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 24px;
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:active {
+            background: #5a67d8;
+            transform: scale(0.98);
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-secondary:active {
+            background: #38a169;
+            transform: scale(0.98);
+        }
+        
+        .btn-warning {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .btn-warning:active {
+            background: #dd6b20;
+            transform: scale(0.98);
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:active {
+            background: #e53e3e;
+            transform: scale(0.98);
+        }
+        
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .status-title {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .status-text {
+            color: #2d3748;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        
+        .success {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .error {
+            border-left-color: #f56565;
+            background: #fff5f5;
+        }
+        
+        .image-info {
+            margin: 15px 0;
+            padding: 12px;
+            background: #edf2f7;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #4a5568;
+        }
+        
+        hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Image Saver Test</h1>
+        <div class="subtitle">Проверка сохранения файлов на телефон</div>
+        
+        <div class="status" id="status">
+            <div class="status-title">📱 Статус:</div>
+            <div class="status-text" id="statusText">Готов к работе</div>
+        </div>
+        
+        <button class="btn-primary" id="pickImageBtn">📁 Выбрать изображение</button>
+        <button class="btn-secondary" id="saveImageBtn" disabled>💾 Сохранить на телефон</button>
+        <button class="btn-warning" id="shareImageBtn" disabled>📤 Поделиться</button>
+        
+        <hr>
+        
+        <div id="imageInfo" style="display: none;" class="image-info">
+            <strong>📄 Информация о файле:</strong><br>
+            <span id="fileName"></span><br>
+            <span id="fileSize"></span>
+        </div>
+        
+        <button class="btn-danger" id="resetBtn" style="margin-top: 20px;">🔄 Сбросить</button>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
