@@ -6,6 +6,8 @@
     "androidScheme": "https"
   },
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": true,
+    "minSdkVersion": 22,
+    "targetSdkVersion": 34
   }
 }
