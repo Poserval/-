@@ -2,12 +2,5 @@
   "appId": "com.imagesaver.test",
   "appName": "ImageSaverTest",
   "webDir": "public",
-  "server": {
-    "androidScheme": "https"
-  },
-  "android": {
-    "allowMixedContent": true,
-    "minSdkVersion": 22,
-    "targetSdkVersion": 34
-  }
+  "bundledWebRuntime": false
 }
