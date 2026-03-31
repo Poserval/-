@@ -1,64 +1,68 @@
-// Capacitor imports
-const { Filesystem, Directory } = CapacitorPlugins.Filesystem;
-const { Share } = CapacitorPlugins.Share;
-const { Camera, CameraResultType, CameraSource } = CapacitorPlugins.Camera;
+// Глобальные переменные
+let selectedImage = null;
+let selectedImageName = null;
+let logEntries = [];
 
-let currentImageData = null;
-let currentFileName = null;
-let currentImageUri = null;
-
-// DOM elements
-const pickImageBtn = document.getElementById('pickImageBtn');
-const saveImageBtn = document.getElementById('saveImageBtn');
-const shareImageBtn = document.getElementById('shareImageBtn');
-const resetBtn = document.getElementById('resetBtn');
-const statusDiv = document.getElementById('status');
-const statusText = document.getElementById('statusText');
-const imageInfo = document.getElementById('imageInfo');
-const fileNameSpan = document.getElementById('fileName');
-const fileSizeSpan = document.getElementById('fileSize');
-
-// Update status with message
-function updateStatus(message, isError = false) {
-    statusText.textContent = message;
-    if (isError) {
-        statusDiv.classList.add('error');
-        statusDiv.classList.remove('success');
-    } else {
-        statusDiv.classList.add('success');
-        statusDiv.classList.remove('error');
+// Функция для добавления в лог
+function addLog(message, isError = false) {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}`;
+    logEntries.unshift(logEntry);
+    if (logEntries.length > 20) logEntries.pop();
+    
+    const logDiv = document.getElementById('logEntries');
+    if (logDiv) {
+        logDiv.innerHTML = logEntries.map(entry => 
+            `<div class="log-entry">${entry}</div>`
+        ).join('');
     }
+    
+    console.log(logEntry);
 }
 
-// Clear status special styling
-function clearStatus() {
-    statusDiv.classList.remove('success', 'error');
+// Обновление статуса
+function updateStatus(message, isError = false) {
+    const statusText = document.getElementById('statusText');
+    const statusCard = document.getElementById('statusCard');
+    
+    if (statusText) statusText.textContent = message;
+    if (statusCard) {
+        if (isError) {
+            statusCard.classList.add('error-border');
+            statusCard.classList.remove('success-border');
+        } else {
+            statusCard.classList.add('success-border');
+            statusCard.classList.remove('error-border');
+        }
+    }
+    
+    addLog(message, isError);
 }
 
-// Format file size
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+// Проверка Capacitor
+function isCapacitorAvailable() {
+    const available = typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform();
+    addLog(`Capacitor доступен: ${available}`);
+    if (!available) {
+        updateStatus('⚠️ Приложение запущено в браузере. Для работы установите APK на телефон!', true);
+    }
+    return available;
 }
 
-// Convert blob to base64
-function blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-}
-
-// Pick image from gallery
-async function pickImage() {
+// Выбор изображения
+async function selectImage() {
+    addLog('Нажата кнопка выбора изображения');
+    
+    if (!isCapacitorAvailable()) {
+        updateStatus('❌ Capacitor не доступен. Установите приложение на телефон!', true);
+        return;
+    }
+    
     try {
-        updateStatus('Выбор изображения...');
+        updateStatus('📷 Открываю галерею...');
+        addLog('Вызов Camera.getPhoto()');
         
+        const Camera = Capacitor.Plugins.Camera;
         const image = await Camera.getPhoto({
             quality: 90,
             allowEditing: false,
@@ -66,159 +70,218 @@ async function pickImage() {
             source: CameraSource.Photos
         });
         
-        currentImageUri = image.webPath || image.path;
-        currentFileName = `IMG_${Date.now()}.jpg`;
+        addLog(`Изображение выбрано: ${image.path || image.webPath}`);
         
-        // Fetch the image as blob
-        const response = await fetch(currentImageUri);
-        const blob = await response.blob();
+        // Получаем данные файла
+        const Filesystem = Capacitor.Plugins.Filesystem;
+        const fileData = await Filesystem.readFile({
+            path: image.path,
+            directory: Directory.Data
+        });
         
-        // Convert to base64
-        const base64Data = await blobToBase64(blob);
-        currentImageData = base64Data.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+        selectedImage = fileData.data;
+        selectedImageName = `image_${Date.now()}.jpg`;
         
-        // Show file info
-        const sizeInBytes = blob.size;
-        fileNameSpan.textContent = `Имя: ${currentFileName}`;
-        fileSizeSpan.textContent = `Размер: ${formatFileSize(sizeInBytes)}`;
-        imageInfo.style.display = 'block';
+        // Показываем информацию
+        const sizeKB = Math.round(selectedImage.length / 1024);
+        document.getElementById('fileName').textContent = `Имя: ${selectedImageName}`;
+        document.getElementById('fileSize').textContent = `Размер: ${sizeKB} KB`;
+        document.getElementById('infoPanel').style.display = 'block';
         
-        updateStatus(`✅ Изображение выбрано: ${currentFileName} (${formatFileSize(sizeInBytes)})`);
+        updateStatus(`✅ Изображение выбрано! Размер: ${sizeKB} KB`);
         
-        // Enable buttons
-        saveImageBtn.disabled = false;
-        shareImageBtn.disabled = false;
+        // Активируем кнопки
+        document.getElementById('saveBtn').disabled = false;
+        document.getElementById('shareBtn').disabled = false;
         
     } catch (error) {
-        console.error('Error picking image:', error);
+        addLog(`Ошибка: ${error.message}`, true);
         if (error.message !== 'User cancelled photos app') {
-            updateStatus(`❌ Ошибка выбора: ${error.message}`, true);
+            updateStatus(`❌ Ошибка: ${error.message}`, true);
         } else {
-            updateStatus('Выбор отменен');
-            setTimeout(() => updateStatus('Готов к работе'), 2000);
+            updateStatus('Выбор изображения отменен');
         }
     }
 }
 
-// Save image to device
+// Сохранение изображения
 async function saveImage() {
-    if (!currentImageData) {
-        updateStatus('❌ Нет изображения для сохранения', true);
+    addLog('Нажата кнопка сохранения');
+    
+    if (!selectedImage) {
+        updateStatus('❌ Нет выбранного изображения', true);
         return;
     }
     
     try {
-        updateStatus('💾 Сохранение файла...');
+        updateStatus('💾 Сохраняю файл...');
+        addLog('Начинаю сохранение');
         
-        // Generate unique filename
-        const timestamp = Date.now();
-        const fileName = `saved_image_${timestamp}.jpg`;
+        const Filesystem = Capacitor.Plugins.Filesystem;
+        const fileName = `IMG_${Date.now()}.jpg`;
         
-        // Save to Documents directory
+        // Сохраняем в Documents
         await Filesystem.writeFile({
             path: fileName,
-            data: currentImageData,
-            directory: Directory.Documents,
-            recursive: true
+            data: selectedImage,
+            directory: Directory.Documents
         });
+        addLog(`Сохранено в Documents: ${fileName}`);
         
-        // Also try to save to Downloads if possible
+        // Пробуем сохранить в Downloads
         try {
             await Filesystem.writeFile({
                 path: fileName,
-                data: currentImageData,
-                directory: Directory.Downloads,
-                recursive: true
+                data: selectedImage,
+                directory: Directory.Downloads
             });
-            updateStatus(`✅ Файл успешно сохранен!\n\n📁 Папки: Documents и Downloads\n📄 Имя файла: ${fileName}\n\n🔍 Проверьте в файловом менеджере телефона`, false);
-        } catch (downloadsError) {
-            updateStatus(`✅ Файл сохранен в папку Documents\n📄 Имя файла: ${fileName}\n\n🔍 Проверьте в файловом менеджере телефона`, false);
+            addLog(`Сохранено в Downloads: ${fileName}`);
+            updateStatus(`✅ Файл сохранен!\n📁 Папки: Documents и Downloads\n📄 Имя: ${fileName}`);
+        } catch (e) {
+            addLog(`Не удалось сохранить в Downloads: ${e.message}`);
+            updateStatus(`✅ Файл сохранен в Documents\n📄 Имя: ${fileName}`);
         }
         
     } catch (error) {
-        console.error('Error saving image:', error);
-        updateStatus(`❌ Ошибка сохранения: ${error.message}\n\nВозможно, нужно разрешение на запись в настройках телефона`, true);
+        addLog(`Ошибка сохранения: ${error.message}`, true);
+        updateStatus(`❌ Ошибка сохранения: ${error.message}`, true);
     }
 }
 
-// Share image
+// Поделиться изображением
 async function shareImage() {
-    if (!currentImageData) {
-        updateStatus('❌ Нет изображения для отправки', true);
+    addLog('Нажата кнопка поделиться');
+    
+    if (!selectedImage) {
+        updateStatus('❌ Нет выбранного изображения', true);
         return;
     }
     
     try {
-        updateStatus('📤 Подготовка к отправке...');
+        updateStatus('📤 Открываю меню отправки...');
+        addLog('Подготовка к отправке');
         
-        // Create a blob from base64 data
-        const byteCharacters = atob(currentImageData);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'image/jpeg' });
+        // Создаем временный файл для отправки
+        const Filesystem = Capacitor.Plugins.Filesystem;
+        const tempName = `temp_${Date.now()}.jpg`;
         
-        // Create a file from blob
-        const file = new File([blob], currentFileName, { type: 'image/jpeg' });
-        
-        // Share the file
-        await Share.share({
-            title: 'Поделиться изображением',
-            text: 'Проверка сохранения файла на телефон',
-            files: [file]
+        await Filesystem.writeFile({
+            path: tempName,
+            data: selectedImage,
+            directory: Directory.Cache
         });
         
-        updateStatus('✅ Диалог отправки открыт\nВыберите приложение для отправки');
+        addLog(`Временный файл создан: ${tempName}`);
+        
+        const Share = Capacitor.Plugins.Share;
+        await Share.share({
+            title: 'Поделиться изображением',
+            text: 'Тест сохранения файла на телефон',
+            url: `file://${tempName}`,
+            dialogTitle: 'Отправить через'
+        });
+        
+        addLog('Диалог отправки открыт');
+        updateStatus('✅ Диалог отправки открыт');
+        
+        // Удаляем временный файл через 5 секунд
+        setTimeout(async () => {
+            try {
+                await Filesystem.deleteFile({
+                    path: tempName,
+                    directory: Directory.Cache
+                });
+                addLog('Временный файл удален');
+            } catch (e) {
+                addLog(`Ошибка удаления: ${e.message}`);
+            }
+        }, 5000);
         
     } catch (error) {
-        console.error('Error sharing image:', error);
+        addLog(`Ошибка отправки: ${error.message}`, true);
         updateStatus(`❌ Ошибка отправки: ${error.message}`, true);
     }
 }
 
-// Reset everything
+// Сброс
 function reset() {
-    currentImageData = null;
-    currentFileName = null;
-    currentImageUri = null;
-    
-    imageInfo.style.display = 'none';
-    fileNameSpan.textContent = '';
-    fileSizeSpan.textContent = '';
-    
-    saveImageBtn.disabled = true;
-    shareImageBtn.disabled = true;
-    
-    clearStatus();
-    updateStatus('🔄 Сброшено. Выберите новое изображение');
-    setTimeout(() => updateStatus('Готов к работе'), 2000);
+    addLog('Сброс состояния');
+    selectedImage = null;
+    selectedImageName = null;
+    document.getElementById('infoPanel').style.display = 'none';
+    document.getElementById('saveBtn').disabled = true;
+    document.getElementById('shareBtn').disabled = true;
+    updateStatus('Сброшено. Выберите новое изображение');
 }
 
-// Check Capacitor availability
-function checkCapacitor() {
-    if (typeof Capacitor === 'undefined' || !Capacitor.isNativePlatform()) {
-        updateStatus('⚠️ Приложение должно быть запущено на устройстве\n(не в браузере)', true);
-        pickImageBtn.disabled = true;
-        saveImageBtn.disabled = true;
-        shareImageBtn.disabled = true;
+// Проверка и инициализация плагинов
+async function checkPlugins() {
+    addLog('Проверка плагинов Capacitor...');
+    
+    if (!isCapacitorAvailable()) return false;
+    
+    const plugins = ['Camera', 'Filesystem', 'Share'];
+    let allAvailable = true;
+    
+    for (const plugin of plugins) {
+        const available = Capacitor.Plugins[plugin] !== undefined;
+        addLog(`Плагин ${plugin}: ${available ? 'доступен' : 'НЕ ДОСТУПЕН'}`);
+        if (!available) allAvailable = false;
+    }
+    
+    if (!allAvailable) {
+        updateStatus('⚠️ Некоторые плагины недоступны. Переустановите приложение.', true);
         return false;
     }
+    
     return true;
 }
 
-// Initialize event listeners
-function init() {
-    if (!checkCapacitor()) return;
+// Главная инициализация
+async function init() {
+    addLog('========== ЗАПУСК ПРИЛОЖЕНИЯ ==========');
+    addLog('Версия: 1.0.0');
     
-    pickImageBtn.addEventListener('click', pickImage);
-    saveImageBtn.addEventListener('click', saveImage);
-    shareImageBtn.addEventListener('click', shareImage);
-    resetBtn.addEventListener('click', reset);
+    // Ждем загрузки Capacitor
+    if (typeof Capacitor === 'undefined') {
+        addLog('Capacitor не загружен, ждем 2 секунды...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
     
-    updateStatus('✅ Приложение готово\n\n📱 Выберите изображение для теста\n💾 Проверьте сохранение файла\n📤 Попробуйте поделиться');
+    // Проверяем наличие глобальных объектов
+    if (typeof Capacitor !== 'undefined') {
+        addLog('Capacitor версия: ' + (Capacitor.getPlatform ? Capacitor.getPlatform() : 'unknown'));
+        addLog('Платформа: ' + (Capacitor.getPlatform ? Capacitor.getPlatform() : 'web'));
+    } else {
+        addLog('Capacitor не обнаружен! Приложение работает в браузере.');
+    }
+    
+    await checkPlugins();
+    
+    // Назначаем обработчики
+    const pickBtn = document.getElementById('pickBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const shareBtn = document.getElementById('shareBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    
+    if (pickBtn) pickBtn.onclick = selectImage;
+    if (saveBtn) saveBtn.onclick = saveImage;
+    if (shareBtn) shareBtn.onclick = shareImage;
+    if (resetBtn) resetBtn.onclick = reset;
+    
+    addLog('Обработчики событий назначены');
+    
+    if (isCapacitorAvailable()) {
+        updateStatus('✅ Приложение готово к работе! Нажмите "ВЫБРАТЬ ИЗОБРАЖЕНИЕ"');
+    } else {
+        updateStatus('⚠️ Приложение запущено в браузере. Установите APK на телефон для тестирования!', true);
+        document.getElementById('pickBtn').disabled = true;
+    }
 }
 
-// Start when DOM is ready
-document.addEventListener('DOMContentLoaded', init);
+// Запускаем инициализацию после загрузки страницы
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
