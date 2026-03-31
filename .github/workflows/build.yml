@@ -21,8 +21,23 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
     
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+    - name: Create gradle wrapper
+      run: |
+        mkdir -p gradle/wrapper
+        curl -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.2.0/gradle/wrapper/gradle-wrapper.jar
+        echo 'distributionBase=GRADLE_USER_HOME' > gradle/wrapper/gradle-wrapper.properties
+        echo 'distributionPath=wrapper/dists' >> gradle/wrapper/gradle-wrapper.properties
+        echo 'distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip' >> gradle/wrapper/gradle-wrapper.properties
+        echo 'zipStoreBase=GRADLE_USER_HOME' >> gradle/wrapper/gradle-wrapper.properties
+        echo 'zipStorePath=wrapper/dists' >> gradle/wrapper/gradle-wrapper.properties
+    
+    - name: Create gradlew script
+      run: |
+        cat > gradlew << 'EOF'
+        #!/bin/sh
+        exec java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain "$@"
+        EOF
+        chmod +x gradlew
     
     - name: Build APK
       run: ./gradlew assembleRelease
