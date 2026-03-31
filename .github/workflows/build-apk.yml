@@ -27,13 +27,15 @@ jobs:
     - name: Install dependencies
       run: npm install
     
-    - name: Install Capacitor
-      run: npm install -g @capacitor/cli
-    
     - name: Build web assets
       run: |
         mkdir -p public
-        npm run build:web || true
+        # Copy files to public directory
+        cp public/index.html public/ || true
+        cp public/app.js public/ || true
+    
+    - name: Install Capacitor CLI
+      run: npm install -g @capacitor/cli
     
     - name: Initialize Capacitor
       run: |
@@ -59,5 +61,5 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug-apk
+        name: ImageSaverTest
         path: android/app/build/outputs/apk/debug/app-debug.apk
