@@ -3,9 +3,9 @@ const { Filesystem, Directory } = CapacitorPlugins.Filesystem;
 const { Share } = CapacitorPlugins.Share;
 const { Camera, CameraResultType, CameraSource } = CapacitorPlugins.Camera;
 
-let currentImagePath = null;
 let currentImageData = null;
 let currentFileName = null;
+let currentImageUri = null;
 
 // DOM elements
 const pickImageBtn = document.getElementById('pickImageBtn');
@@ -44,6 +44,16 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+// Convert blob to base64
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
 // Pick image from gallery
 async function pickImage() {
     try {
@@ -56,19 +66,19 @@ async function pickImage() {
             source: CameraSource.Photos
         });
         
-        currentImagePath = image.path;
+        currentImageUri = image.webPath || image.path;
         currentFileName = `IMG_${Date.now()}.jpg`;
         
-        // Read file data
-        const fileData = await Filesystem.readFile({
-            path: currentImagePath,
-            directory: Directory.Data
-        });
+        // Fetch the image as blob
+        const response = await fetch(currentImageUri);
+        const blob = await response.blob();
         
-        currentImageData = fileData.data;
+        // Convert to base64
+        const base64Data = await blobToBase64(blob);
+        currentImageData = base64Data.split(',')[1]; // Remove data:image/jpeg;base64, prefix
         
         // Show file info
-        const sizeInBytes = currentImageData.length;
+        const sizeInBytes = blob.size;
         fileNameSpan.textContent = `Имя: ${currentFileName}`;
         fileSizeSpan.textContent = `Размер: ${formatFileSize(sizeInBytes)}`;
         imageInfo.style.display = 'block';
@@ -104,15 +114,15 @@ async function saveImage() {
         const timestamp = Date.now();
         const fileName = `saved_image_${timestamp}.jpg`;
         
-        // Save to device
-        const result = await Filesystem.writeFile({
+        // Save to Documents directory
+        await Filesystem.writeFile({
             path: fileName,
             data: currentImageData,
             directory: Directory.Documents,
             recursive: true
         });
         
-        // Also try to save to Downloads (for easier access)
+        // Also try to save to Downloads if possible
         try {
             await Filesystem.writeFile({
                 path: fileName,
@@ -120,14 +130,14 @@ async function saveImage() {
                 directory: Directory.Downloads,
                 recursive: true
             });
-            updateStatus(`✅ Файл сохранен!\n📁 Documents и Downloads папки\n📄 Имя: ${fileName}`, false);
+            updateStatus(`✅ Файл успешно сохранен!\n\n📁 Папки: Documents и Downloads\n📄 Имя файла: ${fileName}\n\n🔍 Проверьте в файловом менеджере телефона`, false);
         } catch (downloadsError) {
-            updateStatus(`✅ Файл сохранен в Documents\n📄 Имя: ${fileName}`, false);
+            updateStatus(`✅ Файл сохранен в папку Documents\n📄 Имя файла: ${fileName}\n\n🔍 Проверьте в файловом менеджере телефона`, false);
         }
         
     } catch (error) {
         console.error('Error saving image:', error);
-        updateStatus(`❌ Ошибка сохранения: ${error.message}`, true);
+        updateStatus(`❌ Ошибка сохранения: ${error.message}\n\nВозможно, нужно разрешение на запись в настройках телефона`, true);
     }
 }
 
@@ -141,32 +151,26 @@ async function shareImage() {
     try {
         updateStatus('📤 Подготовка к отправке...');
         
-        // Save temp file for sharing
-        const tempFileName = `share_${Date.now()}.jpg`;
-        const result = await Filesystem.writeFile({
-            path: tempFileName,
-            data: currentImageData,
-            directory: Directory.Cache
-        });
+        // Create a blob from base64 data
+        const byteCharacters = atob(currentImageData);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'image/jpeg' });
         
-        // Get full URI
-        const fileUri = result.uri;
+        // Create a file from blob
+        const file = new File([blob], currentFileName, { type: 'image/jpeg' });
         
         // Share the file
         await Share.share({
             title: 'Поделиться изображением',
-            text: 'Проверка сохранения файла',
-            url: fileUri,
-            dialogTitle: 'Отправить изображение'
+            text: 'Проверка сохранения файла на телефон',
+            files: [file]
         });
         
-        updateStatus('✅ Диалог отправки открыт');
-        
-        // Clean up temp file
-        await Filesystem.deleteFile({
-            path: tempFileName,
-            directory: Directory.Cache
-        });
+        updateStatus('✅ Диалог отправки открыт\nВыберите приложение для отправки');
         
     } catch (error) {
         console.error('Error sharing image:', error);
@@ -176,9 +180,9 @@ async function shareImage() {
 
 // Reset everything
 function reset() {
-    currentImagePath = null;
     currentImageData = null;
     currentFileName = null;
+    currentImageUri = null;
     
     imageInfo.style.display = 'none';
     fileNameSpan.textContent = '';
@@ -188,14 +192,14 @@ function reset() {
     shareImageBtn.disabled = true;
     
     clearStatus();
-    updateStatus('Сброшено. Выберите новое изображение');
+    updateStatus('🔄 Сброшено. Выберите новое изображение');
     setTimeout(() => updateStatus('Готов к работе'), 2000);
 }
 
 // Check Capacitor availability
 function checkCapacitor() {
-    if (typeof Capacitor === 'undefined') {
-        updateStatus('⚠️ Запустите приложение на устройстве (не в браузере)', true);
+    if (typeof Capacitor === 'undefined' || !Capacitor.isNativePlatform()) {
+        updateStatus('⚠️ Приложение должно быть запущено на устройстве\n(не в браузере)', true);
         pickImageBtn.disabled = true;
         saveImageBtn.disabled = true;
         shareImageBtn.disabled = true;
@@ -213,7 +217,7 @@ function init() {
     shareImageBtn.addEventListener('click', shareImage);
     resetBtn.addEventListener('click', reset);
     
-    updateStatus('✅ Приложение готово\nВыберите изображение для теста');
+    updateStatus('✅ Приложение готово\n\n📱 Выберите изображение для теста\n💾 Проверьте сохранение файла\n📤 Попробуйте поделиться');
 }
 
 // Start when DOM is ready
