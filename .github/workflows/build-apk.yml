@@ -1,8 +1,8 @@
-name: Build Android APK
+name: Build APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -10,61 +10,45 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-    
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-    
-    - name: Install dependencies
-      run: |
-        npm install --legacy-peer-deps
-        npm list --depth=0
-    
-    - name: Build web assets
-      run: |
-        mkdir -p public
-        # Копируем файлы если они есть в src, иначе они уже в public
-        if [ -f src/index.html ]; then cp src/index.html public/; fi
-        if [ -f src/app.js ]; then cp src/app.js public/; fi
-        ls -la public/
-    
-    - name: Install Capacitor CLI
-      run: npm install -g @capacitor/cli@5.7.0
-    
-    - name: Initialize Capacitor
-      run: |
-        npx cap init ImageSaverTest com.imagesaver.test --web-dir=public
-    
-    - name: Add Android platform
-      run: npx cap add android
-    
-    - name: Sync Capacitor
-      run: npx cap sync android
-    
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      with:
-        packages: 'platforms;android-33'
-    
-    - name: Grant execute permission for gradlew
-      run: chmod +x android/gradlew
-    
-    - name: Build APK
-      run: |
-        cd android
-        ./gradlew assembleDebug --stacktrace
-    
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: ImageSaverTest
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install Capacitor and plugins
+        run: |
+          npm install --legacy-peer-deps @capacitor/cli@5.7.8 @capacitor/core@5.7.8 @capacitor/android@5.7.8
+          npm install --legacy-peer-deps @capacitor/filesystem@5.1.0 @capacitor/share@5.0.6
+          
+      - name: Clean old Android
+        run: rm -rf android
+          
+      - name: Init Capacitor
+        run: npx cap init PhotoCraftPro com.photocraft.pro --web-dir=docs
+          
+      - name: Add Android platform
+        run: npx cap add android
+          
+      - name: Sync Capacitor
+        run: npx cap sync android
+          
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PhotoCraftPro
+          path: android/app/build/outputs/apk/debug/app-debug.apk
