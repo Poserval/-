@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Image Saver Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>PhotoCraft Pro — AI Photo Studio</title>
     <style>
         * {
             margin: 0;
@@ -11,200 +11,542 @@
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
-        
+
         body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #f5f5f5;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f1f5f9;
+            padding: 16px;
             min-height: 100vh;
-            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        
+
         .container {
-            max-width: 500px;
+            max-width: 550px;
+            width: 100%;
             margin: 0 auto;
             background: white;
-            border-radius: 24px;
-            padding: 24px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 32px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
         }
-        
+
         h1 {
-            font-size: 28px;
-            color: #1a1a1a;
+            font-size: 1.75rem;
+            font-weight: 700;
             text-align: center;
-            margin-bottom: 8px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 4px;
         }
-        
-        .subtitle {
+
+        .sub {
             text-align: center;
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 32px;
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 12px;
         }
-        
-        button {
+
+        /* Preview area */
+        .preview-area {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 24px;
+            aspect-ratio: 3 / 4;
             width: 100%;
-            padding: 16px;
-            margin: 12px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-bottom: 16px;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .preview-area:active {
+            transform: scale(0.99);
+        }
+
+        .preview-placeholder {
+            text-align: center;
+            color: #94a3b8;
+            padding: 20px;
+        }
+
+        .preview-placeholder-icon {
+            font-size: 56px;
+            margin-bottom: 12px;
+            opacity: 0.7;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            background: #0f172a;
+        }
+
+        .file-info {
+            font-size: 12px;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            word-break: break-all;
+        }
+
+        /* Controls */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 6px;
+            margin-left: 4px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 24px;
+            font-size: 15px;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .save-btn, .reset-btn {
+            flex: 1;
+            padding: 14px;
             border: none;
-            border-radius: 12px;
+            border-radius: 40px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            background: #f0f0f0;
-            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        
-        button:active {
-            transform: scale(0.98);
-        }
-        
-        .btn-primary {
-            background: #007AFF;
+
+        .save-btn {
+            background: #3b82f6;
             color: white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         }
-        
-        .btn-primary:active {
-            background: #0051b3;
+
+        .save-btn:active {
+            transform: scale(0.97);
+            background: #2563eb;
         }
-        
-        .btn-success {
-            background: #34C759;
-            color: white;
+
+        .reset-btn {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
         }
-        
-        .btn-success:active {
-            background: #248a3d;
+
+        .reset-btn:active {
+            transform: scale(0.97);
+            background: #e2e8f0;
         }
-        
-        .btn-warning {
-            background: #FF9500;
-            color: white;
-        }
-        
-        .btn-warning:active {
-            background: #c46a00;
-        }
-        
-        .btn-danger {
-            background: #FF3B30;
-            color: white;
-        }
-        
-        button:disabled {
-            opacity: 0.5;
-            transform: none;
-        }
-        
-        .status-card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 20px 0;
-            border-left: 4px solid #007AFF;
-        }
-        
-        .status-title {
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        
-        .status-text {
-            color: #666;
-            font-size: 13px;
-            line-height: 1.5;
-            word-break: break-word;
-            white-space: pre-wrap;
-        }
-        
-        .success-border {
-            border-left-color: #34C759;
-            background: #f0f9f0;
-        }
-        
-        .error-border {
-            border-left-color: #FF3B30;
-            background: #fff0f0;
-        }
-        
-        .info-box {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 12px;
-            margin: 16px 0;
-            font-size: 13px;
-            color: #666;
-        }
-        
-        .info-box strong {
-            color: #1a1a1a;
-        }
-        
-        hr {
-            margin: 20px 0;
-            border: none;
-            border-top: 1px solid #e5e5e5;
-        }
-        
-        .log {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 12px;
-            font-family: monospace;
-            font-size: 11px;
-            color: #666;
+
+        .status {
             margin-top: 20px;
-            max-height: 200px;
-            overflow-y: auto;
+            padding: 12px 16px;
+            border-radius: 24px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+            display: none;
+            animation: fadeIn 0.2s ease;
         }
-        
-        .log-title {
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 12px;
+
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            display: block;
         }
-        
-        .log-entry {
-            padding: 4px 0;
-            border-bottom: 1px solid #e5e5e5;
-            font-family: monospace;
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            display: block;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+
+        .debug-panel {
+            margin-top: 20px;
+            background: #0f172a;
+            color: #a5f3fc;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 10px;
+            padding: 12px;
+            border-radius: 20px;
+            word-break: break-all;
+            line-height: 1.4;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        }
+
+        .highlight {
+            animation: pulse 0.6s ease;
+            border-radius: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📸 Image Saver Test</h1>
-        <div class="subtitle">Тест сохранения файлов на телефон</div>
-        
-        <div class="status-card" id="statusCard">
-            <div class="status-title">📱 Статус:</div>
-            <div class="status-text" id="statusText">Готов к работе</div>
+<div class="container">
+    <h1>📸 PhotoCraft Pro</h1>
+    <div class="sub">AI Photo Studio • Сохраняй с одного касания</div>
+
+    <div id="uploadZone" class="preview-area">
+        <div id="previewPlaceholder" class="preview-placeholder">
+            <div class="preview-placeholder-icon">🖼️</div>
+            <div>Нажми, чтобы выбрать фото</div>
+            <div style="font-size: 11px; margin-top: 8px;">JPG, PNG, WEBP</div>
         </div>
-        
-        <button class="btn-primary" id="pickBtn">📁 ВЫБРАТЬ ИЗОБРАЖЕНИЕ</button>
-        <button class="btn-success" id="saveBtn" disabled>💾 СОХРАНИТЬ НА ТЕЛЕФОН</button>
-        <button class="btn-warning" id="shareBtn" disabled>📤 ПОДЕЛИТЬСЯ</button>
-        
-        <hr>
-        
-        <div id="infoPanel" style="display:none;" class="info-box">
-            <strong>📄 Информация о файле:</strong><br>
-            <span id="fileName"></span><br>
-            <span id="fileSize"></span>
-        </div>
-        
-        <button class="btn-danger" id="resetBtn">🔄 СБРОСИТЬ</button>
-        
-        <div class="log" id="logPanel">
-            <div class="log-title">📋 Лог операций:</div>
-            <div id="logEntries"></div>
-        </div>
+        <img id="previewImg" class="preview-image" style="display: none;" alt="preview">
     </div>
-    
-    <script src="capacitor.js"></script>
-    <script src="app.js"></script>
+
+    <div id="fileInfo" class="file-info" style="display: none;"></div>
+
+    <div class="input-group">
+        <label>📄 Имя файла (без расширения)</label>
+        <input type="text" id="fileName" value="photocraft_image">
+    </div>
+
+    <div class="button-group">
+        <button class="save-btn" id="saveBtn">💾 СОХРАНИТЬ</button>
+        <button class="reset-btn" id="resetBtn">↺ Сбросить</button>
+    </div>
+
+    <div id="status" class="status"></div>
+    <div id="debugInfo" class="debug-panel">🔍 Инициализация...</div>
+</div>
+
+<script>
+    (function() {
+        // DOM elements
+        const uploadZone = document.getElementById('uploadZone');
+        const previewImg = document.getElementById('previewImg');
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
+        const fileInfoDiv = document.getElementById('fileInfo');
+        const fileNameInput = document.getElementById('fileName');
+        const saveBtn = document.getElementById('saveBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusDiv = document.getElementById('status');
+        const debugDiv = document.getElementById('debugInfo');
+
+        let currentBase64 = null;       // полный base64 data URL
+        let currentBlob = null;          // оригинальный Blob
+        let currentFileNameRaw = 'photocraft_image';
+        let currentMime = 'image/png';
+
+        // === UI helpers ===
+        function showStatus(message, type = 'success') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            setTimeout(() => {
+                if (statusDiv) statusDiv.style.display = 'none';
+            }, 4500);
+        }
+
+        function showDebug(msg) {
+            if (debugDiv) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugDiv.innerHTML = `🔧 ${timestamp} — ${msg}`;
+            }
+            console.log('[PhotoCraft]', msg);
+        }
+
+        // === Проверка окружения ===
+        function detectPlatform() {
+            const isCapacitor = typeof Capacitor !== 'undefined';
+            const isNative = isCapacitor && Capacitor.isNativePlatform?.();
+            let platform = 'web';
+            if (isNative) platform = 'capacitor_android';
+            else if (isCapacitor) platform = 'capacitor_web';
+            
+            const pluginsList = (isCapacitor && Capacitor.Plugins) ? Object.keys(Capacitor.Plugins) : [];
+            showDebug(`${platform.toUpperCase()} | Plugins: ${pluginsList.length ? pluginsList.join(', ') : '—'}`);
+            
+            if (isNative && (!Capacitor.Plugins?.SaveImagePlugin)) {
+                showDebug('⚠️ SaveImagePlugin не обнаружен. Будет использован fallback (долгое нажатие)');
+            }
+            return { isNative, hasSavePlugin: !!(Capacitor?.Plugins?.SaveImagePlugin) };
+        }
+
+        // === ОСНОВНОЕ СОХРАНЕНИЕ: NATIVE PLUGIN / FALLBACK ===
+        async function saveImage() {
+            if (!currentBase64 && !currentBlob) {
+                showStatus('❌ Сначала выберите изображение', 'error');
+                return;
+            }
+
+            const platformInfo = detectPlatform();
+            const isAndroidNative = platformInfo.isNative;
+            const hasPlugin = platformInfo.hasSavePlugin;
+            
+            showStatus('⏳ Подготовка к сохранению...', 'info');
+            
+            // 1️⃣ ПРИОРИТЕТ: нативный плагин SaveImagePlugin (MediaStore)
+            if (isAndroidNative && hasPlugin) {
+                try {
+                    showDebug('Вызов нативного SaveImagePlugin...');
+                    let finalBase64 = currentBase64;
+                    if (!finalBase64 && currentBlob) {
+                        finalBase64 = await new Promise((resolve) => {
+                            const r = new FileReader();
+                            r.onloadend = () => resolve(r.result);
+                            r.readAsDataURL(currentBlob);
+                        });
+                    }
+                    if (!finalBase64) throw new Error('Нет данных изображения');
+                    
+                    const userFileName = fileNameInput.value.trim() || 'photocraft';
+                    const fileName = `${userFileName}_${Date.now()}.png`;
+                    
+                    const result = await Capacitor.Plugins.SaveImagePlugin.saveToGallery({
+                        base64: finalBase64,
+                        fileName: fileName
+                    });
+                    
+                    if (result?.success) {
+                        showStatus('✅ Фото сохранено в галерею! (папка Pictures/PhotoCraftPro)', 'success');
+                        showDebug(`Успешно: ${fileName}`);
+                        return;
+                    } else {
+                        throw new Error('Плагин вернул ошибку');
+                    }
+                } catch (e) {
+                    console.error('Native plugin error:', e);
+                    showDebug(`Плагин не сработал: ${e.message}`);
+                    showStatus('⚠️ Нативный метод не сработал, используем резервный вариант', 'info');
+                    // fallback к долгому нажатию
+                    fallbackLongPressSave();
+                }
+                return;
+            }
+            
+            // 2️⃣ ЕСЛИ МЫ В NATIVE, НО ПЛАГИН ОТСУТСТВУЕТ -> долгое нажатие
+            if (isAndroidNative && !hasPlugin) {
+                showDebug('Режим APK без плагина — используем долгое нажатие');
+                fallbackLongPressSave();
+                return;
+            }
+            
+            // 3️⃣ ВЕБ-ВЕРСИЯ: стандартное скачивание
+            if (!isAndroidNative) {
+                try {
+                    let downloadUrl = currentBase64;
+                    if (!downloadUrl && currentBlob) {
+                        downloadUrl = URL.createObjectURL(currentBlob);
+                    }
+                    if (!downloadUrl) throw new Error('Нет данных');
+                    
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    const ext = currentMime === 'image/png' ? 'png' : 'jpg';
+                    const name = (fileNameInput.value.trim() || 'photocraft') + '.' + ext;
+                    link.download = name;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    if (downloadUrl.startsWith('blob:')) URL.revokeObjectURL(downloadUrl);
+                    showStatus('✅ Изображение сохранено (браузер)', 'success');
+                    showDebug(`Веб-загрузка: ${name}`);
+                } catch (err) {
+                    showStatus('❌ Ошибка сохранения в веб-версии', 'error');
+                    showDebug(`Web error: ${err.message}`);
+                }
+                return;
+            }
+            
+            // 4️⃣ ФИНАЛЬНЫЙ FALLBACK (если ничего не подошло)
+            fallbackLongPressSave();
+        }
+        
+        // === ДОЛГОЕ НАЖАТИЕ (гарантированный fallback для APK) ===
+        function fallbackLongPressSave() {
+            if (!previewImg || previewImg.style.display === 'none') {
+                showStatus('❌ Нет активного изображения для сохранения', 'error');
+                return;
+            }
+            
+            // Подсветка + скролл
+            previewImg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            previewImg.style.transition = 'box-shadow 0.2s';
+            previewImg.style.boxShadow = '0 0 0 4px #3b82f6, 0 0 0 8px rgba(59,130,246,0.3)';
+            previewImg.style.borderRadius = '16px';
+            setTimeout(() => {
+                previewImg.style.boxShadow = '';
+            }, 1800);
+            
+            // Показываем информативный тост-инструкцию
+            const toast = document.createElement('div');
+            toast.innerText = '👇 Нажми и УДЕРЖИВАЙ палец на фото → "Сохранить изображение"';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '30px';
+            toast.style.left = '20px';
+            toast.style.right = '20px';
+            toast.style.backgroundColor = '#0f172a';
+            toast.style.color = 'white';
+            toast.style.padding = '14px 18px';
+            toast.style.borderRadius = '60px';
+            toast.style.fontSize = '14px';
+            toast.style.fontWeight = '500';
+            toast.style.textAlign = 'center';
+            toast.style.zIndex = '9999';
+            toast.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
+            toast.style.backdropFilter = 'blur(8px)';
+            toast.style.border = '1px solid #334155';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+            
+            showStatus('💡 Нажмите и УДЕРЖИВАЙТЕ на изображении', 'info');
+            showDebug('Fallback: долгое нажатие (системное меню Android)');
+        }
+        
+        // === ЗАГРУЗКА ФАЙЛА ===
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                showStatus('❌ Пожалуйста, выберите изображение (JPG, PNG, WEBP)', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                currentBase64 = dataUrl;
+                currentBlob = file;
+                currentMime = file.type;
+                const rawName = file.name.replace(/\.[^/.]+$/, '');
+                if (rawName) fileNameInput.value = rawName;
+                currentFileNameRaw = rawName;
+                
+                // Превью
+                previewImg.src = dataUrl;
+                previewImg.style.display = 'block';
+                previewPlaceholder.style.display = 'none';
+                
+                const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+                fileInfoDiv.style.display = 'block';
+                fileInfoDiv.innerHTML = `📸 ${file.name}  •  ${sizeMB} MB  •  ${file.type.split('/')[1].toUpperCase()}`;
+                
+                showStatus('✅ Готово! Нажмите "Сохранить"', 'success');
+                showDebug(`Загружено: ${file.name} (${sizeMB} MB)`);
+            };
+            reader.onerror = () => {
+                showStatus('❌ Ошибка чтения файла', 'error');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Выбор файла через клик
+        function triggerFileSelect() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/jpeg,image/png,image/webp';
+            input.onchange = (e) => {
+                if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+            };
+            input.click();
+        }
+        
+        // Сброс
+        function resetAll() {
+            currentBase64 = null;
+            currentBlob = null;
+            previewImg.style.display = 'none';
+            previewImg.src = '';
+            previewPlaceholder.style.display = 'flex';
+            fileInfoDiv.style.display = 'none';
+            fileNameInput.value = 'photocraft_image';
+            showStatus('🔄 Изображение сброшено', 'info');
+            showDebug('Сброс выполнен');
+        }
+        
+        // === ИНИЦИАЛИЗАЦИЯ И СОБЫТИЯ ===
+        uploadZone.addEventListener('click', triggerFileSelect);
+        saveBtn.addEventListener('click', saveImage);
+        resetBtn.addEventListener('click', resetAll);
+        
+        // Drag & Drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '#3b82f6';
+            uploadZone.style.backgroundColor = '#eff6ff';
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.borderColor = '#cbd5e1';
+            uploadZone.style.backgroundColor = '#f8fafc';
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '#cbd5e1';
+            uploadZone.style.backgroundColor = '#f8fafc';
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) handleFile(file);
+            else showStatus('❌ Перетащите изображение', 'error');
+        });
+        
+        // Проверка Capacitor после полной загрузки
+        setTimeout(() => {
+            const { isNative, hasSavePlugin } = detectPlatform();
+            if (isNative && hasSavePlugin) {
+                showDebug('✅ Плагин SaveImagePlugin активен → сохранение в галерею работает');
+            } else if (isNative && !hasSavePlugin) {
+                showDebug('⚠️ Плагин не найден. Используй долгое нажатие');
+            } else {
+                showDebug('🌐 Веб-режим: сохранение через стандартное скачивание');
+            }
+        }, 300);
+    })();
+</script>
 </body>
 </html>
