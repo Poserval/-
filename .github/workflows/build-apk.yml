@@ -23,7 +23,7 @@ jobs:
           npm install --legacy-peer-deps @capacitor/cli@5.7.8 @capacitor/core@5.7.8 @capacitor/android@5.7.8
           npm install --legacy-peer-deps @capacitor/filesystem@5.1.0 @capacitor/share@5.0.6
           
-      - name: Clean old Android
+      - name: Remove old android folder
         run: rm -rf android
           
       - name: Init Capacitor
