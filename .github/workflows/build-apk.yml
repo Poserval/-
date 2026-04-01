@@ -32,6 +32,14 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
           
+      - name: Copy native plugin files
+        run: |
+          # Создаём структуру папок для плагина
+          mkdir -p android/app/src/main/java/com/photocraft/pro
+          
+          # Копируем плагин из репозитория в android проект
+          cp android/app/src/main/java/com/photocraft/pro/SaveImagePlugin.java android/app/src/main/java/com/photocraft/pro/ 2>/dev/null || echo "Plugin file not found in repo"
+          
       - name: Sync Capacitor
         run: npx cap sync android
           
