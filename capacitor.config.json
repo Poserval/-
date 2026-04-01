@@ -1,6 +1,6 @@
 {
-  "appId": "com.imagesaver.test",
-  "appName": "ImageSaverTest",
-  "webDir": "public",
+  "appId": "com.photocraft.pro",
+  "appName": "PhotoCraft Pro",
+  "webDir": "docs",
   "bundledWebRuntime": false
 }
